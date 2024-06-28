@@ -48,12 +48,16 @@ class EncryptionApp:
 
     def encrypt_file(self):
         if hasattr(self, 'file_path'):
+            # Step b: Generate AES key and encrypt file
             aes_key = generate_aes_key()
             ciphertext, nonce, tag = encrypt_file_aes(self.file_path, aes_key)
+
+            # Step c: Generate RSA key pair and encrypt AES key
             rsa_private_key, rsa_public_key = generate_rsa_key_pair()
             encrypted_aes_key = encrypt_string_rsa(aes_key, rsa_public_key)
             sha1_hash = calculate_sha1(rsa_private_key)
 
+            # Step d: Save metadata
             with open(self.file_path + ".enc", 'wb') as f:
                 f.write(nonce + tag + ciphertext)
 
@@ -64,6 +68,7 @@ class EncryptionApp:
             with open(self.file_path + ".metadata", 'w') as f:
                 json.dump(metadata, f)
 
+            # Step e: Export RSA private key
             with open(self.file_path + ".private_key", 'wb') as f:
                 f.write(rsa_private_key)
 
@@ -85,16 +90,23 @@ class EncryptionApp:
 
     def decrypt_file(self):
         if hasattr(self, 'enc_file_path') and hasattr(self, 'key_file_path'):
+            # Step b: Read private key from file
             with open(self.key_file_path, 'rb') as f:
                 private_key = f.read()
+            
+            # Step c: Check SHA-1 hash
             with open(self.enc_file_path + ".metadata", 'r') as f:
                 metadata = json.load(f)
             sha1_hash = metadata['sha1_hash']
             if calculate_sha1(private_key) != sha1_hash:
                 messagebox.showerror("Decrypt File", "SHA-1 hash does not match!")
                 return
+            
+            # Step d: Decrypt the AES key
             encrypted_aes_key = bytes.fromhex(metadata['encrypted_aes_key'])
             aes_key = decrypt_string_rsa(encrypted_aes_key, private_key)
+
+            # Step e: Decrypt the file
             with open(self.enc_file_path, 'rb') as f:
                 file_content = f.read()
             nonce, tag, ciphertext = file_content[:16], file_content[16:32], file_content[32:]
