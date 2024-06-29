@@ -1,51 +1,135 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import json
+import customtkinter as ctk
 from core import generate_aes_key, encrypt_file_aes, decrypt_file_aes, generate_rsa_key_pair, encrypt_string_rsa, decrypt_string_rsa, calculate_sha1
 
-class EncryptionApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Encryption Application")
+LARGEFONT =("Verdana", 35)
+HELVETICA = ("Helvetica", 20, "bold")
+class EncryptionApp(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+        tk.Tk.title(self, "File Encryption App")
+        tk.Tk.geometry(self, "1000x800")
 
+        #container will contain all the frame
+        container = tk.Frame(self)
+        container.pack(side="top", fill="both", expand=True)
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
+        #dictionary to store all the frames
+        self.frames = {}
+        for F in (MenuFrame, EncryptionFrame, DecryptionFrame):
+            page_name = F.__name__
+            frame = F(parent=container, controller=self)
+            self.frames[page_name] = frame
+
+            # put all of the pages in the same location;
+            # the one on the top of the stacking order
+            # will be the one that is visible.
+            frame.grid(row=0, column=0, sticky="nsew")
+
+        self.show_frame("MenuFrame")
+
+    def show_frame(self, page_name):
+        '''Show a frame for the given page name'''
+        frame = self.frames[page_name]
+        frame.tkraise()
+
+class MenuFrame(tk.Frame):
+    def __init__(self,parent, controller):
+        # Menu Section
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="File Encryption App",font=LARGEFONT)
+        label.grid(row=0,column=2,padx = 10, pady = 10) 
+
+        encrypt_btn = tk.Button(self,
+                                 text="Encrypt File",
+                                 font=HELVETICA,
+                                 width=20,
+                                 height=5,
+                                 command=lambda: controller.show_frame("EncryptionFrame"))
+        encrypt_btn.grid(row = 1,column=1,padx=10, pady=10)
+
+        decrypt_btn = tk.Button(self, text="Decrypt File",
+                                font= HELVETICA,
+                                width=20,
+                                height=5,
+                                command=lambda: controller.show_frame("DecryptionFrame"))
+        decrypt_btn.grid(row=1,column=3, padx=10, pady=10)
+
+
+class EncryptionFrame(tk.Frame):
+    def __init__(self,parent, controller):
         # Encrypt File Section
-        self.encrypt_frame = tk.LabelFrame(root, text="Encrypt File", padx=10, pady=10)
-        self.encrypt_frame.pack(padx=10, pady=10)
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Encrypt File")
 
-        self.select_file_btn = tk.Button(self.encrypt_frame, text="Select File", command=self.select_file)
-        self.select_file_btn.grid(row=0, column=0, padx=10, pady=10)
+        self.controller = controller
 
-        self.selected_file_label = tk.Label(self.encrypt_frame, text="No file selected")
-        self.selected_file_label.grid(row=0, column=1, padx=10, pady=10)
+        
 
-        self.encrypt_file_btn = tk.Button(self.encrypt_frame, text="Encrypt File", command=self.encrypt_file)
-        self.encrypt_file_btn.grid(row=1, column=0, columnspan=2, pady=10)
+        # self.encrypt_frame = tk.LabelFrame( text="Encrypt File", padx=10, pady=10)
+        # self.encrypt_frame.pack(padx=10, pady=10)
 
+        # self.select_file_btn = tk.Button(self.encrypt_frame, text="Select File", command=self.select_file)
+        # self.select_file_btn.grid(row=0, column=0, padx=10, pady=10)
+
+        # self.selected_file_label = tk.Label(self.encrypt_frame, text="No file selected")
+        # self.selected_file_label.grid(row=0, column=1, padx=10, pady=10)
+
+        # self.encrypt_file_btn = tk.Button(self.encrypt_frame, text="Encrypt File", command=self.encrypt_file)
+        # self.encrypt_file_btn.grid(row=1, column=0, columnspan=2, pady=10)
+
+        
+
+
+
+class DecryptionFrame(tk.Frame):
+    def __init__(self,parent, controller):
         # Decrypt File Section
-        self.decrypt_frame = tk.LabelFrame(root, text="Decrypt File", padx=10, pady=10)
-        self.decrypt_frame.pack(padx=10, pady=10)
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        # self.decrypt_frame = tk.LabelFrame( text="Decrypt File", padx=10, pady=10)
+        # self.decrypt_frame.pack(padx=10, pady=10)
 
-        self.select_enc_file_btn = tk.Button(self.decrypt_frame, text="Select Encrypted File", command=self.select_enc_file)
-        self.select_enc_file_btn.grid(row=0, column=0, padx=10, pady=10)
+        # self.select_enc_file_btn = tk.Button(self.decrypt_frame, text="Select Encrypted File")
+        # self.select_enc_file_btn.grid(row=0, column=0, padx=10, pady=10)
 
-        self.selected_enc_file_label = tk.Label(self.decrypt_frame, text="No file selected")
-        self.selected_enc_file_label.grid(row=0, column=1, padx=10, pady=10)
+        # self.selected_enc_file_label = tk.Label(self.decrypt_frame, text="No file selected")
+        # self.selected_enc_file_label.grid(row=0, column=1, padx=10, pady=10)
 
-        self.select_key_file_btn = tk.Button(self.decrypt_frame, text="Select Private Key File", command=self.select_key_file)
-        self.select_key_file_btn.grid(row=1, column=0, padx=10, pady=10)
+        # self.select_key_file_btn = tk.Button(self.decrypt_frame, text="Select Private Key File")
+        # self.select_key_file_btn.grid(row=1, column=0, padx=10, pady=10)
 
-        self.selected_key_file_label = tk.Label(self.decrypt_frame, text="No key file selected")
-        self.selected_key_file_label.grid(row=1, column=1, padx=10, pady=10)
+        # self.selected_key_file_label = tk.Label(self.decrypt_frame, text="No key file selected")
+        # self.selected_key_file_label.grid(row=1, column=1, padx=10, pady=10)
 
-        self.decrypt_file_btn = tk.Button(self.decrypt_frame, text="Decrypt File", command=self.decrypt_file)
-        self.decrypt_file_btn.grid(row=2, column=0, columnspan=2, pady=10)
+        # self.decrypt_file_btn = tk.Button(self.decrypt_frame, text="Decrypt File")
+        # self.decrypt_file_btn.grid(row=2, column=0, columnspan=2, pady=10)
 
+
+class SelectFile:
     def select_file(self):
         file_path = filedialog.askopenfilename()
         if file_path:
             self.selected_file_label.config(text=file_path)
             self.file_path = file_path
+    def select_enc_file(self):
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            self.selected_enc_file_label.config(text=file_path)
+            self.enc_file_path = file_path
 
+    def select_key_file(self):
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            self.selected_key_file_label.config(text=file_path)
+            self.key_file_path = file_path
+
+
+class EncryptFile:
     def encrypt_file(self):
         if hasattr(self, 'file_path'):
             # Step b: Generate AES key and encrypt file
@@ -76,18 +160,8 @@ class EncryptionApp:
         else:
             messagebox.showwarning("Encrypt File", "No file selected!")
 
-    def select_enc_file(self):
-        file_path = filedialog.askopenfilename()
-        if file_path:
-            self.selected_enc_file_label.config(text=file_path)
-            self.enc_file_path = file_path
 
-    def select_key_file(self):
-        file_path = filedialog.askopenfilename()
-        if file_path:
-            self.selected_key_file_label.config(text=file_path)
-            self.key_file_path = file_path
-
+class DecryptFile:
     def decrypt_file(self):
         if hasattr(self, 'enc_file_path') and hasattr(self, 'key_file_path'):
             # Step b: Read private key from file
@@ -120,7 +194,8 @@ class EncryptionApp:
         else:
             messagebox.showwarning("Decrypt File", "No file or key selected!")
 
+
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = EncryptionApp(root)
-    root.mainloop()
+    main = EncryptionApp()
+    main.mainloop()
