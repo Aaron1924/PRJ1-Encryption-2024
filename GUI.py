@@ -4,6 +4,7 @@ import json
 from tkinter import simpledialog
 from core import generate_aes_key, encrypt_file_aes, decrypt_file_aes, generate_rsa_key_pair, encrypt_string_rsa, decrypt_string_rsa, calculate_sha1
 import base64
+import os
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
@@ -14,6 +15,18 @@ class EncryptionApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Encryption Application")
+
+        self.save_dir = ""
+
+        # Select Directory Section
+        self.directory_frame = tk.LabelFrame(root, text="Select Directory", padx=10, pady=10)
+        self.directory_frame.pack(padx=10, pady=10)
+
+        self.select_dir_btn = tk.Button(self.directory_frame, text="Select Directory", command=self.select_directory)
+        self.select_dir_btn.grid(row=0, column=0, padx=10, pady=10)
+
+        self.selected_dir_label = tk.Label(self.directory_frame, text="No directory selected")
+        self.selected_dir_label.grid(row=0, column=1, padx=10, pady=10)
 
         # Encrypt File Section
         self.encrypt_frame = tk.LabelFrame(root, text="Encrypt File", padx=10, pady=10)
@@ -53,6 +66,13 @@ class EncryptionApp:
         self.decrypt_file_btn = tk.Button(self.decrypt_frame, text="Decrypt File", command=self.decrypt_file)
         self.decrypt_file_btn.grid(row=4, column=0, columnspan=2, pady=10)
 
+    def select_directory(self):
+        self.save_dir = filedialog.askdirectory()
+        if self.save_dir:
+            self.selected_dir_label.config(text=self.save_dir)
+        else:
+            self.selected_dir_label.config(text="No directory selected")
+
     def select_file(self):
         file_path = filedialog.askopenfilename()
         if file_path:
@@ -61,6 +81,10 @@ class EncryptionApp:
 
     def encrypt_file(self):
         if hasattr(self, 'file_path'):
+            if not self.save_dir:
+                messagebox.showwarning("Encrypt File", "No directory selected!")
+                return
+
             # Step b: Generate AES key and encrypt file
             aes_key = generate_aes_key()
             ciphertext, nonce, tag = encrypt_file_aes(self.file_path, aes_key)
@@ -70,8 +94,11 @@ class EncryptionApp:
             encrypted_aes_key = encrypt_string_rsa(aes_key, rsa_public_key)
             sha1_hash = calculate_sha1(rsa_private_key)
 
+            # Get the base name of the file
+            base_name = os.path.basename(self.file_path)
+
             # Step d: Save encrypted file
-            with open(self.file_path + ".enc", 'wb') as f:
+            with open(os.path.join(self.save_dir, base_name + ".enc"), 'wb') as f:
                 f.write(nonce + tag + ciphertext)
 
             # Step d: Save metadata
@@ -79,7 +106,7 @@ class EncryptionApp:
                 'encrypted_aes_key': encrypted_aes_key,
                 'sha1_hash': sha1_hash
             }
-            with open(self.file_path + ".metadata.txt", 'w') as f:
+            with open(os.path.join(self.save_dir, base_name + ".metadata.txt"), 'w') as f:
                 json.dump(metadata, f)
 
             # Step e: Export RSA key pair
@@ -87,7 +114,7 @@ class EncryptionApp:
                 'private_key': rsa_private_key,
                 'public_key': rsa_public_key
             }
-            with open(self.file_path + ".keys.txt", 'w') as f:
+            with open(os.path.join(self.save_dir, base_name + ".keys.txt"), 'w') as f:
                 json.dump(key_data, f)
 
             messagebox.showinfo("Encrypt File", "File encrypted successfully!")
@@ -168,6 +195,10 @@ class EncryptionApp:
                 messagebox.showwarning("Decrypt File", "No key provided!")
                 return
 
+            if not self.save_dir:
+                messagebox.showwarning("Decrypt File", "No directory selected!")
+                return
+
             # Check SHA-1 hash
             metadata_path = self.enc_file_path.replace('.enc', '.metadata.txt')
             with open(metadata_path, 'r') as f:
@@ -187,7 +218,8 @@ class EncryptionApp:
             nonce, tag, ciphertext = file_content[:16], file_content[16:32], file_content[32:]
             try:
                 decrypted_data = decrypt_file_aes(ciphertext, aes_key, nonce, tag)
-                with open(self.enc_file_path.replace(".enc", ""), 'wb') as f:
+                base_name = os.path.basename(self.enc_file_path).replace(".enc", "")
+                with open(os.path.join(self.save_dir, base_name), 'wb') as f:
                     f.write(decrypted_data)
                 messagebox.showinfo("Decrypt File", "File decrypted successfully!")
             except Exception as e:
