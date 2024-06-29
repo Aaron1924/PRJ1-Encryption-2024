@@ -140,9 +140,10 @@ class Encrypt:
 
 
             # output encrypted aes key to screen
-            
+
             sha1_hash = calculate_sha1(rsa_private_key)
 
+            
             # Step d: Save metadata
             with open(self.file_path + ".enc", 'wb') as f:
                 f.write(nonce + tag + ciphertext)
